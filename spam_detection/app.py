@@ -102,9 +102,11 @@ if st.button('Predict'):
 
 # Streamlit app setup
 st.title("SMS Spam Classifier")
-input_sms = st.text_area("Enter the message")
 
-if st.button('Predict'):
+# Added a unique key to avoid duplicate element error
+input_sms = st.text_area("Enter the message", key="input_sms")
+
+if st.button('Predict', key="predict_button"):
     # Preprocess the input message
     transformed_sms = transform_text(input_sms)
     
@@ -119,4 +121,5 @@ if st.button('Predict'):
         st.header("Spam")
     else:
         st.header("Not Spam")
+
 
