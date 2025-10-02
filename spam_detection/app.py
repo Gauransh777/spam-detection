@@ -81,27 +81,6 @@ model = pickle.load(open(os.path.join(BASE_DIR, "model.pkl"), 'rb'))
 
 # Streamlit app setup
 st.title("SMS Spam Classifier")
-input_sms = st.text_area("Enter the message")
-
-if st.button('Predict'):
-    # Preprocess the input message
-    transformed_sms = transform_text(input_sms)
-    
-    # Vectorize the transformed message
-    vector_input = tfidf.transform([transformed_sms])
-    
-    # Predict the result
-    result = model.predict(vector_input)[0]
-    
-    # Display the result
-    if result == 1:
-        st.header("Spam")
-    else:
-        st.header("Not Spam")
-
-
-# Streamlit app setup
-st.title("SMS Spam Classifier")
 
 # Added a unique key to avoid duplicate element error
 input_sms = st.text_area("Enter the message", key="input_sms")
@@ -121,5 +100,6 @@ if st.button('Predict', key="predict_button"):
         st.header("Spam")
     else:
         st.header("Not Spam")
+
 
 
