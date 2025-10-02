@@ -6,113 +6,82 @@ from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 import os
 
-import nltk
-from nltk.corpus import stopwords
+# Initialize Porter Stemmer
+ps = PorterStemmer()
 
-# Function to download NLTK resources safely
-def download_nltk_resources():
-    try:
-        _ = stopwords.words('english')
-    except LookupError:
-        nltk.download('stopwords', quiet=True)
+def transform_text(text):
+    """
+    Transforms the input text by converting to lowercase, tokenizing,
+    removing non-alphanumeric characters, stopwords, and punctuation,
+    and applying stemming.
+    """
+    # Convert to lowercase
+    text = text.lower()
     
-    try:
-        nltk.word_tokenize("test")
-    except LookupError:
-        nltk.download('punkt', quiet=True)
-
-download_nltk_resources()
-
-from nltk.stem import PorterStemmer
-ps = PorterStemmer()
-stop_words = set(stopwords.words('english'))
-
-
-def transform_text(text):
-    # Convert to lowercase
-    text = text.lower()
     # Tokenize text
-    text = nltk.word_tokenize(text)
+    tokens = nltk.word_tokenize(text)
 
-    # Remove non-alphanumeric tokens
-    text = [i for i in text if i.isalnum()]
+    # Remove non-alphanumeric tokens and keep only alphabetic ones
+    tokens = [i for i in tokens if i.isalnum()]
 
     # Remove stopwords and punctuation
-    text = [i for i in text if i not in stop_words and i not in string.punctuation]
+    stop_words = set(stopwords.words('english'))
+    punctuation = set(string.punctuation)
+    tokens = [i for i in tokens if i not in stop_words and i not in punctuation]
 
     # Apply stemming
-    text = [ps.stem(i) for i in text]
+    stemmed_tokens = [ps.stem(i) for i in tokens]
 
     # Return the cleaned text as a single string
-    return " ".join(text)
+    return " ".join(stemmed_tokens)
 
-# Load the vectorizer and model
-import streamlit as st
-import pickle
-import string
-import nltk
-from nltk.corpus import stopwords
-from nltk.stem import PorterStemmer
-import os
+# --- Load Pre-trained Models ---
+# Determine the absolute path to the directory containing this script
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Download required resources
-nltk.download('punkt')
-nltk.download('stopwords')
+# Define paths to the model and vectorizer files
+vectorizer_path = os.path.join(BASE_DIR, "vectorizer.pkl")
+model_path = os.path.join(BASE_DIR, "model.pkl")
 
-# Initialize the Porter Stemmer
-ps = PorterStemmer()
-
-# Fetch stopwords once
-stop_words = set(stopwords.words('english'))
-
-def transform_text(text):
-    # Convert to lowercase
-    text = text.lower()
-    # Tokenize text
-    text = nltk.word_tokenize(text)
-
-    # Remove non-alphanumeric tokens
-    text = [i for i in text if i.isalnum()]
-
-    # Remove stopwords and punctuation
-    text = [i for i in text if i not in stop_words and i not in string.punctuation]
-
-    # Apply stemming
-    text = [ps.stem(i) for i in text]
-
-    # Return the cleaned text as a single string
-    return " ".join(text)
-
-# Load the vectorizer and model
-
-BASE_DIR = os.path.dirname(__file__)  # folder where app.py is
-
-tfidf = pickle.load(open(os.path.join(BASE_DIR, "vectorizer.pkl"), 'rb'))
-model = pickle.load(open(os.path.join(BASE_DIR, "model.pkl"), 'rb'))
+# Load the TF-IDF vectorizer and the prediction model
+try:
+    with open(vectorizer_path, 'rb') as f:
+        tfidf = pickle.load(f)
+    with open(model_path, 'rb') as f:
+        model = pickle.load(f)
+except FileNotFoundError:
+    st.error("Model or vectorizer file not found. Please ensure 'vectorizer.pkl' and 'model.pkl' are in the same directory as app.py.")
+    st.stop()
+except Exception as e:
+    st.error(f"An error occurred while loading the model files: {e}")
+    st.stop()
 
 
-# Streamlit app setup
-st.title("SMS Spam Classifier")
+# --- Streamlit App Interface ---
+st.set_page_config(page_title="SMS Spam Classifier", layout="centered")
 
-# Added a unique key to avoid duplicate element error
-input_sms = st.text_area("Enter the message", key="input_sms")
+st.title("📧 SMS Spam Classifier")
+st.write("Enter a message below to determine if it's spam or not.")
 
+# Text area for user input
+input_sms = st.text_area("Enter the message:", height=150, key="input_sms")
+
+# Predict button
 if st.button('Predict', key="predict_button"):
-    # Preprocess the input message
-    transformed_sms = transform_text(input_sms)
-    
-    # Vectorize the transformed message
-    vector_input = tfidf.transform([transformed_sms])
-    
-    # Predict the result
-    result = model.predict(vector_input)[0]
-    
-    # Display the result
-    if result == 1:
-        st.header("Spam")
+    if input_sms.strip() == "":
+        st.warning("Please enter a message to classify.")
     else:
-        st.header("Not Spam")
-
-
-
-
+        # 1. Preprocess the input message
+        transformed_sms = transform_text(input_sms)
+        
+        # 2. Vectorize the transformed message
+        vector_input = tfidf.transform([transformed_sms])
+        
+        # 3. Predict the result
+        result = model.predict(vector_input)[0]
+        
+        # 4. Display the result
+        if result == 1:
+            st.error("This message is likely **Spam**.")
+        else:
+            st.success("This message is **Not Spam**.")
