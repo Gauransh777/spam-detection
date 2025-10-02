@@ -6,15 +6,27 @@ from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 import os
 
-# Download required resources
-nltk.download('punkt')
-nltk.download('stopwords')
+import nltk
+from nltk.corpus import stopwords
 
-# Initialize the Porter Stemmer
+# Function to download NLTK resources safely
+def download_nltk_resources():
+    try:
+        _ = stopwords.words('english')
+    except LookupError:
+        nltk.download('stopwords', quiet=True)
+    
+    try:
+        nltk.word_tokenize("test")
+    except LookupError:
+        nltk.download('punkt', quiet=True)
+
+download_nltk_resources()
+
+from nltk.stem import PorterStemmer
 ps = PorterStemmer()
-
-# Fetch stopwords once
 stop_words = set(stopwords.words('english'))
+
 
 def transform_text(text):
     # Convert to lowercase
@@ -100,6 +112,7 @@ if st.button('Predict', key="predict_button"):
         st.header("Spam")
     else:
         st.header("Not Spam")
+
 
 
 
